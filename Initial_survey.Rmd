@@ -1,0 +1,204 @@
+---
+title: "Initial Survey for Mangrove Kingfisher"
+author: "Raphaël Nussbaumer <raphael.nussbaumer@arocha.org>"
+output: 
+  rmdformats::material
+  html_document:
+    df_print: paged
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readxl)
+library(purrr)
+library(lubridate)
+library(leaflet)
+library(sp)
+library(RColorBrewer)
+library(DT)
+library(leaflet.extras)
+
+project.root = 'C:/Users/rnussba1/ARK/Science - Documents/04 Geolocator/7-Output/GBIF'
+export = "2021-05-28"
+```
+
+## Load survey
+
+
+```{r}
+surveys <- read_csv(paste0(project.root,"/data/complied_files/export_", export, "_surveys.csv"),
+                    col_types = cols(
+                      filename = col_character(),
+                      observer = col_character(),
+                      date = col_date(format = ""),
+                      sessionID = col_character(),
+                      start_time = col_time(format = ""),
+                      end_time = col_time(format = ""),
+                      gap_min = col_double(),
+                      start_hour = col_time(format = ""),
+                      surveyID = col_character()
+                    )
+                    ) %>% 
+  mutate(
+    duration = difftime(end_time,start_time, units="mins")-gap_min
+  )
+records <- read_csv(paste0(project.root,"/data/complied_files/export_", export, "_records.csv"),
+                    col_types = cols(
+                    specieName = col_character(),
+                    specieID = col_double(),
+                    date = col_datetime(format = ""),
+                    lat = col_double(),
+                    lng = col_double(),
+                    note = col_character(),
+                    recordID = col_character(),
+                    surveyID = col_character(),
+                    sessionID = col_character()
+                  )) 
+```
+
+The current dataset includes **`r length(surveys)` surveys**, spanning from `r first(surveys$date)` to `r last(surveys$date)`, totalizing **`r as.integer(sum(surveys$duration/60))` hours**.
+
+## Read data for each survey
+
+Based on the metadata of each survey loaded in the previous section, we can now create the database including all sightings (i.e. individual observation) and associated survey information. 
+```{r}
+datatable(records, filter = "top", extensions = 'Buttons', options = list(dom = 'Bfrtip', buttons = c('csv')), rownames = FALSE, class = "compact")
+```
+
+
+# Map surveys track and MK locations
+
+```{r}
+
+m <- leaflet(width = "100%") %>%
+  addProviderTiles("MapBox", options = providerTileOptions(
+    id = "mapbox.satellite",
+    accessToken = 'pk.eyJ1IjoicmFmbnVzcyIsImEiOiIzMVE1dnc0In0.3FNMKIlQ_afYktqki-6m0g')) %>% 
+  addFullscreenControl()
+
+factpal <- colorFactor(brewer.pal(12, 'Paired'), as.factor(records$surveyID))
+
+for (s in unique(records$surveyID)){
+  m <- addPolylines(m, data=records %>% 
+                      filter(surveyID==s) %>% 
+                      mutate(      
+                        day = format(date,"%Y%m%d"),
+                        label = paste0(
+                         "<b>Date:</b> ", date,'<br>',
+                         "<b>surveyID</b>: ", surveyID,'<br>'
+                      )),
+                    lng = ~lng, lat = ~lat , group = ~sessionID, color=~factpal(surveyID), popup = ~label)
+}
+
+m <- addCircleMarkers(m, data = records %>%
+                  mutate(
+                    day = format(date,"%Y%m%d"),
+                    label = paste0(
+                       "<b>recordID</b>: ", recordID,'<br>',
+                       "<b>Species:</b> ", specieName,'<br>',
+                       "<b>Date:</b> ", date, '<br>',
+                       "<b>surveyID</b>: ", surveyID,'<br>'
+                  )),
+                lng = ~lng, lat = ~lat, popup = ~label,
+                radius = ~ifelse(specieID==400, 10, 6),
+                stroke = FALSE,
+                fillOpacity = ~ifelse(specieID==400, 1, 0.8),
+                color = ~factpal(surveyID),
+                group = ~sessionID)
+
+m <- m %>% addLayersControl(
+    overlayGroups =  records$sessionID, #format(d$date,"%Y%m%d"),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+
+m
+```
+
+## All MK sightings
+
+```{r}
+dMK <- read_csv(paste(project.root,'/4-Data/BL_EVENT_mangrovekingfisherproj.csv',sep=""), 
+         col_types = cols_only(
+      date = col_date(format = ""),
+      time = col_time(format = ""),
+      locationLat = col_double(),
+      locationLon = col_double(),
+      lead = col_character()
+    )) %>% 
+  mutate(lead = gsub("\\@.*","",lead))
+
+datatable(dMK, filter = "top", extensions = 'Buttons', options = list(dom = 'Bfrtip', buttons = c('csv')), rownames = FALSE, class = "compact")
+```
+
+           
+```{r}
+
+m <- leaflet(width = "100%") %>%
+  addProviderTiles("MapBox", options = providerTileOptions(
+    id = "mapbox.satellite",
+    accessToken = 'pk.eyJ1IjoicmFmbnVzcyIsImEiOiIzMVE1dnc0In0.3FNMKIlQ_afYktqki-6m0g')) %>% 
+  addFullscreenControl()
+
+factpal <- colorFactor(brewer.pal(12, 'Paired'), as.factor(d$survey_ID))
+
+for (s in unique(d$survey_ID)){
+  m <- addPolylines(m, data=d %>% 
+                      filter(survey_ID==s),
+                    lng = ~Longitude, lat = ~Latitude , group = ~Date, color='black')
+}
+
+m <- addMarkers(m, data = records %>% 
+                        filter(specieID==400) %>% 
+                  mutate(label = paste(sep = "",
+                                   "<b>Date:</b> ", date,'<br>',
+                                   "<b>Note</b>: ", note
+                  )), 
+                lng = ~lng, lat = ~lat, popup = ~label,
+                group = 'from surveys'
+                )
+
+m <- addMarkers(m, data = dMK %>% 
+                  mutate(label = paste(sep = "",
+                                   "<b>Date:</b> ", date, ' ', time,'<br>',
+                                   "<b>Observer:</b> ", lead,'<br>'
+                  )), 
+                lng = ~locationLon, lat = ~locationLat, popup = ~label,
+                group = 'from KBM',
+                clusterOptions = markerClusterOptions()
+                )
+
+m <- m %>% addLayersControl(
+    overlayGroups = c('from KBM','from surveys'),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+
+m
+```
+## Bird diversity
+
+```{r}
+records %>% 
+  group_by(specieName) %>% 
+  filter(specieName!= 'Unidentified') %>% 
+  summarise(
+    n = n(),
+    occurance = n/length(unique(records$survey_ID)),
+    #avgtime = parse_time(format(mean(as.POSIXct(Time, format="%H:%M:%S"))), format="%Y-%M-%D %H:%M:%S"),
+    .groups = "drop"
+    ) %>% 
+  arrange(desc(n)) %>% 
+  datatable( filter = "top", extensions = 'Buttons', options = list(dom = 'Bfrtip', buttons = c('csv')), rownames = FALSE, class = "compact")
+```
+
+
+
+
+
+
+
+
+
+
+
