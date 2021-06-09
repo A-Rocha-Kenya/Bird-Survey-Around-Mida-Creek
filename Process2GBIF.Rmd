@@ -9,7 +9,7 @@ output:
 
 
 ## Introduction
-This script reads the birdlasser files collected on the ground and produces the `events.csv` and `occurances.csv` files in Darwin format for the publication of the [Bird Survey Around Mida Creek](https://a-rocha-kenya.github.io/Bird-Survey-Around-Mida-Creek/) on [GBIF](doi).
+This script reads the Birdlasser files collected on the ground and produces the `events.csv` and `occurances.csv` files in Darwin format for the publication of the [Bird Survey Around Mida Creek](https://a-rocha-kenya.github.io/Bird-Survey-Around-Mida-Creek/) on [GBIF](doi).
 
 
 ```{r setup, include=FALSE}
@@ -33,27 +33,27 @@ project.root = 'C:/Users/rnussba1/ARK/Science - Documents/04 Geolocator/7-Output
 
 ## Load surveys metadata
 
-A *session* comprise around 90 *surveys* gathered during a month each of them covering a different *transects*. Sessions are repeated every month. A *survey* is a ~1 hours (non-stop) recording of all species encountered.
+A *session* comprises around 90 *surveys* gathered during a month, each of them covering a different *transect*. Sessions are repeated every month. A *survey* is a ~1 hour (non-stop) recording of all species encountered.
 
-For each sessions (usualy 4 surveys performed from 6am to 10am), a birdlasser csv file with all the species recorded is exported by the observer and sent to me. All the files received are stored in `/birdlasser_files/` folder and additional information of each survey is recorded in the `metadata.xlsx` file:
+For each session (usually 4 surveys performed from 6am to 10am), a Birdlasser csv file with all the species recorded is exported by the observer and sent to Raphaël Nussbaumer. All the files received are stored in the `/birdlasser_files/` folder and additional information on each survey is recorded in the `metadata.xlsx` file:
 
-* `filename`: Birdlasser file name containing the data of the survey and stored in `/birdlasser_files/`
-* `observer`: Letter for each observer L (Kirao Lennox), J (Juma Badi), D (Daniel Kazungu), K (Kibwana Ali), S (Saddam Kailo) and M(Mohammed Ali)
-* `sessionID`: Session identifier (monthly grouping of survey covering all the transects), `YYYYMM` with the month where most surveys were done. 
+* `filename`: Birdlasser file name containing the survey data and stored in `/birdlasser_files/`
+* `observer`: Letter for each observer L (Kirao Lennox), J (Juma Badi), D (Daniel Kazungu), K (Kibwana Ali), S (Saddam Kailo) and M (Mohammed Ali)
+* `sessionID`: Session identifier (monthly grouping of surveys covering all the transects), `YYYYMM` with the month where most surveys were done. 
 * `Date`: Date of the survey
-* `start_time`: Time of start of the survey
-* `end_time` : Time of the end of the survey
+* `start_time`: Time of survey start
+* `end_time`: Time of survey end
 * `first_sighting`: DEPRECATED: before `unidentified` was used to specify the start and end time, we used this.
 * `last_sighting`: DEPRECATED
-* `protocol_ok`: whether the data are properly recorded (`TRUE` or `FALSE`)
-* `gap_min`: duration of the survey where bird were not recorded (often because of rain) in `MM:HH`.
-* `notes`: Additional notes with respect to the survey
+* `protocol_ok`: Whether the data is properly recorded (`TRUE` or `FALSE`).
+* `gap_min`: Duration of the survey where birds were not recorded (often because of rain) in `MM:HH`.
+* `notes`: Additional notes with respect to the survey.
 
-Here, we read this file as table and add computed variable:
+Here, we read this file as a table and add computed variables:
 
-* `start_hour`: (start time rounded to the closer hour) so 6,7,8,9,10 or 11
+* `start_hour`: (start time rounded to the closest hour) so 6,7,8,9,10 or 11
 * `duration`: (end-start-gaps) and create an survey 
-* `surveyID` an unique identifier per survey 
+* `surveyID`: a unique identifier per survey 
 
 ```{r}
 all_surveys <- read_excel(paste(project.root,"data/metadata.xlsx",sep="/"), sheet=2) %>% 
@@ -68,13 +68,13 @@ all_surveys <- read_excel(paste(project.root,"data/metadata.xlsx",sep="/"), shee
     gap_min = ifelse( is.na(gap_min), 0, as.integer(format(gap_min,'%M'))),
     start_hour = parse_time(format(round(as.POSIXct(start_time, format="%H:%M:%S"), units="hours"),'%H:%M')),
     surveyID = paste( sessionID, format(date, "%Y%m%d"), str_replace(start_hour,':00:00','') , observer, sep = '_' ),
-    notes = notes,
+    notes = str_replace_all(notes, "[\r\n]" , ""),
     observer = observer,
     .keep = "used"
     )
 ```
 
-We replace the observer code (first letter) by the full name of the observer
+We replace the observer code (first letter) by the full name of the observer.
 
 ```{r}
 matchName <- function(x) {
@@ -98,7 +98,7 @@ all_surveys <- all_surveys %>% mutate(
 )
 ```
 
-Here is extract (first 5 rows) of the dataset of surveys
+Below is an extract (first 5 rows) of the dataset of surveys:
 
 ```{r}
 datatable(all_surveys %>% head(), filter = "top", extensions = 'Buttons', options = list(dom = 'Bfrtip', buttons = c('csv')), rownames = FALSE, class = "compact")
@@ -106,7 +106,7 @@ datatable(all_surveys %>% head(), filter = "top", extensions = 'Buttons', option
 
 ## Load Sightings data
 
-Based on the metadata of each survey loaded in the previous section, we can now create the database including all sightings (i.e. individual observation) and associated survey information. 
+Based on the metadata of each survey loaded in the previous section, we can now create the database including all sightings (i.e. individual observations) and associated survey information. 
 
 ```{r}
 draw <- all_surveys %>%  
@@ -132,8 +132,7 @@ draw <- all_surveys %>%
       date = Date+Time,
       lat = Latitude,
       lng = Longitude,
-      note = Notes,
-      recordID = paste(s$surveyID,specieID,sep="_"),
+      note = str_replace_all(Notes, "[\r\n]" , ""),
       # From Survey information
       surveyID = s$surveyID,
       sessionID = s$sessionID,
@@ -147,7 +146,10 @@ draw <- all_surveys %>%
       #  notes_survey = s$notes,
       .keep = "none"
    ) %>% 
-    arrange(date)
+    arrange(date) %>% 
+    group_by(surveyID,specieID) %>% 
+    mutate(recordID = paste(surveyID,specieID,row_number(),sep="_")) %>% 
+    ungroup()
 })
 
 
@@ -156,7 +158,7 @@ datatable(draw %>% head(), filter = "top", extensions = 'Buttons', options = lis
 
 ## Surveys cleaning
 
-In this section, we clean the surveys data from erronous location and species
+In this section, we clean the survey data from erroneous locations and species.
 
 ```{r}
 dCleaned <- draw
@@ -164,8 +166,7 @@ dCleaned <- draw
 
 ### Cleaning location
 
-We remove and interpolate the wrong location of the individual sightings which were determined by visual checking (see map below
-) 
+We remove and interpolate the wrong locations of individual sightings which were determined by visual checking (see map below). 
 ```{r}
 errorLocList = c(
   '202006_20200528_06_JD_0','202006_20200528_06_JD_545','202006_20200610_06_JD_0','202006_20200616_06_JD_0','202006_20200616_06_JD_517','202006_20200701_06_JD_0','202006_20200701_06_JD_989','202006_20200701_06_JD_784','202006_20200624_09_JD_797','202006_20200610_08_JD_0','202006_20200610_07_JD_0','202006_20200610_07_JD',
@@ -195,7 +196,7 @@ for (s in unique(dCleaned$surveyID)){
   
 ```
 
-Visualized on a map all sightings to identify the erronous location. Select specific session for ease of cleaning
+We visualized all sightings on a map to identify the erroneous locations. We selected specific sessions for ease of cleaning.
 
 ```{r}
 
@@ -251,7 +252,7 @@ m
 
 ### Cleaning Species
 
-The cleaning of the species is based on an external dataset where all species reported were manually checked (validated or flagged as error). Here, we load this spreasheet and apply the correction (remove or replace with equivalent speceID).
+The cleaning of the species is based on an external dataset where all species reported were manually checked (validated or flagged as error). Here, we load this spreadsheet and apply the corrections (remove or replace with equivalent specieID).
 
 ```{r}
 species.list.validation <- read_xlsx(paste0(project.root, '/data/species_lists_validation.xlsx'), range = "A1:F288") %>% 
@@ -267,7 +268,7 @@ dCleaned <- dCleaned %>%
   select(-c('specieName.x','specieName.y','Comment','Equivalent specieID','Status','NumberObs'))
 ```
 
-We add external information (specie name, family, etc...) based on the Species list from the [2019 Checklist of the Birds of Kenya 5th Edition](https://github.com/A-Rocha-Kenya/Birds-of-Kenya)
+We added external information (specie name, family, etc...) based on the Species list from the [2019 Checklist of the Birds of Kenya 5th Edition](https://github.com/A-Rocha-Kenya/Birds-of-Kenya)
 
 ```{r}
 species.list <- read_xlsx('C:/Users/rnussba1/Documents/GitHub/Birds-of-Kenya/Checklist of the Birds of Kenya 5th Edition (2019)/2019 Checklist of the Birds of Kenya 5th Edition (2019).xlsx', sheet = "main")
@@ -296,7 +297,7 @@ datatable(dsp, filter = "top", extensions = 'Buttons', options = list(dom = 'Bfr
 
 ## Add location information to survey
 
-As location information have to be added to the event data (i.e., survey), we add to each surveys (in `all_surveys`) the transect name and footprintWKT.
+As location information have to be added to the event data (i.e., survey), we add the transect name and footprintWKT to each survey (in `all_surveys`).
 
 ```{r}
 f <- paste0(project.root,"/data/transects.geojson")
@@ -390,7 +391,7 @@ events <- all_surveys %>%
     )
 ```
 
-### Export occurance table
+### Export occurrence table
 ```{r}
 occurrences <- dCleaned %>% 
   transmute(
