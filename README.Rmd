@@ -5,8 +5,7 @@ output:
   prettydoc::html_pretty:
     theme: architect
     highlight: github
-  github_document:
-    always_allow_html: true
+    #keep_md: true
 ---
 
 Raphaël Nussbaumer<sup>1,<a href="http://orcid.org/0000-0002-8185-1020"><img src="https://info.orcid.org/wp-content/uploads/2020/12/orcid_16x16.gif"></a></sup>, Kirao Lennox<sup>1,[![](https://info.orcid.org/wp-content/uploads/2020/12/orcid_16x16.gif)](http://orcid.org/0000-0002-3548-5787)</sup>,  Colin Jackson <sup>1,[![](https://info.orcid.org/wp-content/uploads/2020/12/orcid_16x16.gif)](http://orcid.org/0000-0003-2280-1397)</sup>
@@ -17,9 +16,8 @@ Raphaël Nussbaumer<sup>1,<a href="http://orcid.org/0000-0002-8185-1020"><img sr
 
 ---
 
-[![DOI:10.15468/9hs9vv](https://zenodo.org/badge/DOI/10.15468/9hs9vv.svg)](https://doi.org/10.15468/9hs9vv)
-<div data-badge-popover="right" data-badge-type="1" data-doi="	10.15468/9hs9vv" data-condensed="true" data-hide-no-mentions="true" class="altmetric-embed"></div>
-
+[![DOI:10.15468/jwnu2e](https://zenodo.org/badge/DOI/10.15468/jwnu2e.svg)](https://doi.org/10.15468/jwnu2e)
+<div data-badge-popover="right" data-badge-type="1" data-doi="10.15468/jwnu2e" data-condensed="true" data-hide-no-mentions="true" class="altmetric-embed"></div>
 
 [![licensebuttons by-nc](https://licensebuttons.net/l/by-nc/3.0/88x31.png)](https://creativecommons.org/licenses/by-nc/4.0)
 
@@ -29,7 +27,6 @@ Raphaël Nussbaumer<sup>1,<a href="http://orcid.org/0000-0002-8185-1020"><img sr
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(readxl)
-#library(purrr)
 library(lubridate)
 library(leaflet)
 library(sp)
@@ -46,58 +43,62 @@ occurrences <- read_csv(paste0(project.root,"/data/occurrences.csv"))
 ```
 
 
-
 ## Description
-The initial goal of these surveys were to collect information about Mangrove Kingfisher (*Halcyon senegaloides*) location for [a study with geolocator](https://www.researchgate.net/project/Intra-african-Bird-Migration). However, as surveys provided richer information, it was decided to publish it on its own. 
+The initial goal of these surveys was to collect information about the location of Mangrove Kingfishers (*Halcyon senegaloides*) for a [geolocator study](https://www.researchgate.net/project/Intra-african-Bird-Migration). However, as surveys provided richer information, it was decided to publish this dataset on its own. 
 
-This dataset contains full/complete presence-only species list surveys (=events) recorded over a transects of ~1km and during ~1hr. Each of these transects is repeated once a month (= session) from May 2020 to May 2021. The study area cover the habitat between the forest of Araboko Sokoke Forest and Mida creek. Surveys were collected by bird guides from the area (Daniel Kazungu, Juma Badi, Kibwana Ali, Saddam Kailo and Mohammed Ali) and organized by Kirao Lennox, Raphaël Nussbaumer and Colin Jackson from [A Rocha Kenya](https://www.arocha.or.ke/).
+Each survey refers to a complete presence-only species list (called "event" in the dataset), each recorded over ~1km and during ~1hr. Four surveys were performed successively over a morning from 6am to 10am covering a transect. Each of the 23 transects was repeated once a month (grouping called "session") from May 2020 to May 2021. The study area covers the habitat between Arabuko-Sokoke Forest and Mida Creek. Surveys were collected by bird guides from the area (Daniel Kazungu, Juma Badi, Kibwana Ali, Saddam Kailo and Mohammed Ali) and organized by Kirao Lennox, Raphaël Nussbaumer and Colin Jackson from [A Rocha Kenya](https://www.arocha.or.ke/).
 
 **Summary of count statistics.**
 
-* Number of session: `r length(unique(events$sessionID))` 
-* Number of events (surveys): `r nrow(events)`
-* Number of occurrences (sightings): `r nrow(occurrences)`
-* Number of species: `r length(unique(occurrences$taxonID))` 
+* Number of transects : **23**
+* Number of sessions: **`r length(unique(events$parentEventID))`**
+* Number of events (surveys): **`r nrow(events)`**
+* Number of occurrences (sightings): **`r nrow(occurrences)`**
+* Number of species: **`r length(unique(occurrences$taxonID))`**
  
-**Purposes:**
+**Purpose:**
 
-- Collect standardized data on common specie between the forest habitat and the creek/coast habitat.
-- Reproducable survey to assess evolution in the futur. 
-- Assess impact of deforestation on the 'shamba' (fields/farms).
+- Collect standardized data on common species between the forest habitat and the creek/coastal habitat.
+- Collect baseline data with a reproducible protocol in order to assess the change of avifauna over time. 
+- Assess the impact of deforestation on the 'shambas' (fields/farms).
 
 **Type of data**
 
 This dataset is published as a [Darwin Core Archive](https://dwc.tdwg.org/) using a [sampling event dataset](https://www.gbif.org/sampling-event-data) type.
 
 **Data structure**
-The raw data collected on the field with the birdlasser app are stored in [`data/birdlasser_files`](data/birdlasser_files). [`data/metadata.xlsx`](data/metadata.xlsx) contains the basic survey informations. 
-The metadata and raw data are combined in [`CompileSessions`](scripts/CompileSessions.html) which also produces the GBIF formatted output files [`events.csv`](data/events.csv) records information related to the surveys and [`occurrences.csv`](data/occurrences.csv) which contains information about the individual sightings. 
 
-***Table 2**: Events (surveys) table structure*
+- The raw data was collected on the field using the [Birdlasser application](https://www.birdlasser.com/), and stored in [`data/birdlasser_files`](https://github.com/A-Rocha-Kenya/Bird-Survey-Around-Mida-Creek/tree/main/data/birdlasser_files). 
+- [`data/metadata.xlsx`](https://github.com/A-Rocha-Kenya/Bird-Survey-Around-Mida-Creek/blob/main/data/metadata.xlsx) contains basic survey information. 
+- The metadata and raw data are combined in [`Process2GBIF.rmd`](https://a-rocha-kenya.github.io/Bird-Survey-Around-Mida-Creek/Process2GBIF.html) 
+- This script also produces the GBIF formatted output files [`events.csv`](https://github.com/A-Rocha-Kenya/Bird-Survey-Around-Mida-Creek/blob/main/data/events.csv) records information related to the surveys and [`occurrences.csv`](https://github.com/A-Rocha-Kenya/Bird-Survey-Around-Mida-Creek/blob/main/data/occurrences.csv) contains information about the individual sightings. 
+
+***Table 1**: Events (surveys) table structure*
 ```{r, echo=F}
-datatable(events %>% head, filter = "top", options = list(dom = 'Bfrtip'), rownames = FALSE, class = "compact")
+datatable(events %>% head, rownames = FALSE, class = "compact", options=list(searching= FALSE)) %>% 
+  formatStyle( 0, target= 'row', lineHeight='10%')
 ```
 
-***Table 3**: Occurrences (counts) table structure*
+***Table 2**: Occurrences (counts) table structure*
 ```{r, echo=F}
 datatable(occurrences %>% head, filter = "top", options = list(dom = 'Bfrtip'), rownames = FALSE, class = "compact")
 ```
 
 ## Keywords
-bird, ornithology, count, monitoring,  survey, Kenya, Africa, East Africa, coast, Mida Creek, Arabuko Sokoke Forest, habitat change, population, trend, Birdlasser, African Bird Atlas, Samplingevent
+bird, ornithology, count, monitoring, survey, Kenya, Africa, East Africa, coast, Mida Creek, Arabuko-Sokoke Forest, habitat change, population, trend, Birdlasser, African Bird Atlas, Samplingevent
 
 
 ## Geographic coverage
 
-The surveys were performed between Arabuko Sokoke Forest and Mida Creek. See []() for more information about the spatial extend of the dataset.  
+The surveys were performed between Arabuko-Sokoke Forest and Mida Creek, on the coast of Kenya. See []() for more information about the spatial extent of the dataset.  
 
-```{r, echo=F}
+```{r, echo=F, warning=F}
 f <- paste0(project.root,"/data/transects.geojson")
 geojson <- fromJSON(f)
 track = readOGR(f,require_geomType = "wkbLineString",verbose=F) %>% spTransform( CRS("+init=epsg:4326"))
 leaflet(width = "100%", height = "500px") %>% 
   addTiles() %>% 
-  addPolylines(data=track)
+  addPolylines(data=track, popup = geojson$features$properties$Name)
 ```
 
 ### Bounding box
@@ -106,7 +107,7 @@ The bounding box is **`r min(occurrences$decimalLatitude)`° to `r max(occurrenc
 
 ## Taxonomic coverage
 
-We record all birds seen (*Aves sp.*) at the species level (with the exeption of one hybrid Hybrid Lovebird *Agapornis fischeri x personatus*). We use the taxonomy from the [Checklist of the Birds of Kenya (5th Edition)](https://github.com/A-Rocha-Kenya/Birds-of-Kenya) ([ISBN: 9966-761-37-3](http://naturekenya.org/shop/checklist-of-the-birds-of-kenya-5th-edition/)) for the `scientificName` and `vernacularName`. The `taxonID` and `taxonRank` are determined from the [eBird/Clements Checklist of Birds of the World: v2019](https://www.birds.cornell.edu/clementschecklist/download/). See [#](section correction) for explanation on how the taxons were intially recorded in the field and then filtered and matched to these taxonomy list. 
+We record all birds seen (*Aves sp.*) at the species level (with the exception of the Hybrid Lovebird *Agapornis fischeri x personatus*). We use the taxonomy from the [Checklist of the Birds of Kenya (5th Edition)](https://github.com/A-Rocha-Kenya/Birds-of-Kenya) ([ISBN: 9966-761-37-3](http://naturekenya.org/shop/checklist-of-the-birds-of-kenya-5th-edition/)) for the `scientificName` and `vernacularName`. The `taxonID` and `taxonRank` are taken from the [eBird/Clements Checklist of Birds of the World: v2019](https://www.birds.cornell.edu/clementschecklist/download/). See section Sampling Description for explanations on how the taxons were initially recorded in the field and later filtered and matched to these taxonomy lists. 
 
 Our dataset contains **`r length(unique(occurrences$taxonID))`** unique species belonging to **`r length(unique(occurrences$family))`** families.
 
@@ -134,69 +135,78 @@ datatable(species.list, filter = "top", options = list(dom = 'Bfrtip'), rownames
 
 
 ## Temporal coverage
-The temporal coverage is from **`r min(events$eventDate)` to `r max(events$eventDate)`**.
+The temporal coverage is from **`r min(events$eventDate)`** to **`r max(events$eventDate)`**.
 
 ### Content providers
 
-The surveys were designed by Raphaël Nussbaumer, Kirao Lennox and Colin Jackson, organized by Kirao Lennox, performed by Daniel Kazungu, Juma Badi, Kibwana Ali, Saddam Kailo and Mohammed Ali.
+- The surveys were designed by Raphaël Nussbaumer, Kirao Lennox and Colin Jackson 
+- The logistics were organized by Kirao Lennox
+- The surveys were performed by Daniel Kazungu, Juma Badi, Kibwana Ali, Saddam Kailo and Mohammed Ali
+- The data was collected, registered, cleaned, formated for GBIF and uploaded by Raphaël Nussbaumer
 
 ## Sampling Methods
 
 ### Study extent
 
-The kenyan coast was once a large continuous forest called [Northern Zanzibar-Inhambane coastal forest mosaic](https://www.worldwildlife.org/ecoregions/at0125), of which Arabuko Sokoke Forest is the largest reminder of today. Extensively study, this forest have benefit from a hard protect from deforestation and human influence. However, the surrounding habitat have been much hammered by human extension and agricultural extension on what used to be a forest. On the other side of our study area, Mida Creek is [...]. 
+The Kenyan coast was once a large continuous forest called the [Northern Zanzibar-Inhambane coastal forest mosaic](https://www.worldwildlife.org/ecoregions/at0125), of which Arabuko-Sokoke Forest is the largest remainder of today. Extensively studied, this forest is an area of high endemism and was therefore gazetted as a National Park in the late 1980s. Since then, it has benefited from a hard protection from deforestation and human influence. However, the surrounding habitat has been strongly affected by human and agricultural extensions on what used to be forest land. 
 
-This is the habitat that we've targeted for our surveys. In order to study the the distribution and abundance of common specie not neceserely restricted to a specieific habitat (forest or mangrove). as well as their association with habitat. 
+On the other side of our study area, [Mida Creek](http://datazone.birdlife.org/site/factsheet/6406) is a 580 ha tidal marine multi-habitat ecosystem fringed with a diverse assemblage of mangrove species (Ceriops tagal, Rhizophora rnucronata, Bruguiera gyrnnorrhiza, Avicennia marina, Sonneratia alba and Xylocarpus benadirensis). 
 
+Surveys in this area allow us to study the distribution and abundance of common species not necessarily restricted to a specific habitat (such as forest or mangrove), as well as their association with certain habitats. 
 
-The transects were defined to cover the general habitat between Arabuko Sokoke Forest, Mida Creek and the coast.They were design such that the habitat is rather homogeneous during each 1hr survey (i.e. along the forest edge or mangrove edge). In addition, the survey start and finish near main road to facilitate access and early start (6am). 
+The transects were defined to cover all habitat types between Arabuko-Sokoke Forest, Mida Creek and the coast. They were designed such that the habitat remains relatively homogeneous during each 1hr survey (i.e. along the forest edge or mangrove edge). In addition, each survey starts and finishes near a main road to facilitate access and early start (6am). 
 See []() for a map of the transects. 
 
 ### Sampling Description
 
-- 2 persons
-- records all birds seen and/or heard at the first time of the encounter (no count data, just presence/absence)
-- record the GPS location of the observer at the moment of the observation (not the bird)
-- Survey could be paused in case of heavy rain or if the land owner was asking questions. These information are recorded in the `dynamicProperties` and `eventRemarks` columns in `events`.
-- Survey of exactly 1 hours, ideally starting at 6am up to 10am. Some remote transects required to performed surveys up to 12am.
-- use the birdlasser app to record the bird species, location and additional comments
-
+- Each survey is performed by 2 persons.
+- Each survey is designed to last 1 hour, covering a transect of 1km.
+- During a survey, each bird species seen and/or heard is recorded once upon the first encounter (i.e., no count data, just presence/absence)
+- The data is collected with the [Birdlasser app](https://play.google.com/store/apps/details?id=com.lasser.birdlasser&hl=en&gl=US), allowing to record the GPS location of the observer at the moment of the observation (i.e., not the bird), the exact time of observation (date and hour) as well as any additional comment. 
+- Surveys can be paused if interrupted due to heavy rain or interaction with land owners, for instance. This information is recorded in the `dynamicProperties` and `eventRemarks` columns in `events`. 
+- Surveys are performed in clusters of 4, starting at 6am up to 10am. Some remote transects (e.g. Kiperwe Island) required more time, thus surveys were performed until 12pm.
+- The Birdlasser data is then exported in CSV format, collected on A Rocha infrastructure and available at [`/data/birdlasser_files`](https://github.com/A-Rocha-Kenya/Bird-Survey-Around-Mida-Creek/tree/main/data/birdlasser_files).
 
 ### Quality control
 
+Quality control is performed in the Rmarkdown script [`Processe2GBIF.rmd`](https://a-rocha-kenya.github.io/Bird-Survey-Around-Mida-Creek/Processe2GBIF.html). 
+
+
+**Protocol Ok**
+Surveys were discarded if the protocol was not properly followed. This happened mainly at the beginning, before the guides were fully trained. We also deleted surveys when the rain lasted longer than 30 minutes.
+
 **Spatial error**
-phone GPS error or sightings entered later at wrong locations were manually identified by plotting all sightings on a maps. These locations were interpolated linearly between the surrounding sithgitngs of the same survey.  
+Phone GPS errors or sightings entered later at wrong locations were manually identified by plotting all sightings on a map. These locations were interpolated linearly between the surrounding sightings of the same survey.  
 The column `georeferenceVerificationStatus` indicates if such interpolation was performed and `georeferenceRemarks` provides the original coordinate. 
 
 **Species list**
-
-All species with up to 5 records were mannual verified by Raphaël Nussbaumer, ... 
-A spreasheet was used to ... []()... with the following code use
-
-The column `identificationVerificationStatus` and `identificationRemarks` are used.
+All species recorded were manually verified by Raphaël Nussbaumer, Colin Jackson and checked with the guides by Kirao Lennox.
+The spreadsheet [`species_lists_validation.xlsx`](https://github.com/A-Rocha-Kenya/Bird-Survey-Around-Mida-Creek/blob/main/data/species_lists_validation.xlsx) was used to record the status (see table below) of each species. In general, each specie was either validated or flagged with an error code. Some errors could be corrected by providing the `Equivalent specieID` (e.g., taxonomic issue).
 
 | Status code      | Description                                                               |
 |------------------|-------------------------------------------------------------------------------|
-| Unknown          | No sure if it is an error or not.                                             |
-| Error--certain   | Erronous species with unkown origin (typo, identification, taxonomy)                            |
-| Error--typo      | Typing error on the phone. Correct when possible with Equivalent specieID.         |
-| Error--taxonomy  | Issues with taxonomy (old/new names, split/merge, duplicate specieID etc…). ALWAYS enter Equivalent specieID.                   |
-| Error--probable  | Possible species in the area but not sufficiently confident in the identification. Entries will be remove. See individual comments                          |
+| Unknown          | Unsure if it is an error or not.                                             |
+| Error--certain   | Erroneous species with unknown origin (typo, identification, taxonomy).                            |
+| Error--typo      | Typing error on the phone. Corrected when possible with Equivalent specieID.         |
+| Error--taxonomy  | Issues with taxonomy (old/new name, split/merge, duplicate specieID etc…). ALWAYS enter Equivalent specieID.                   |
+| Error--probable  | Possible species in the area but not sufficiently confident in the identification. Entry will be removed. See individual comments.                          |
 | Valid--known     | Species known to occur here.                              |
-| Valid--confirmed | Uncommon/rare species confirmed by Mida guides. See individual comments |
+| Valid--confirmed | Uncommon/rare species confirmed by Mida guides. See individual comments. |
 | Valid--likely    | Uncommon species but probable enough to keep the data.                           |
+
+
+The `events` data was cleaned accordingly: kept if valid, changed to the `Equivalent specieID` or deleted if erroneous. The status code and original specieID were recorded in `events` under the columns `identificationVerificationStatus` and `identificationRemarks`. 
 
 
 
 ### Step Description
 
-All processing steps from the original birdlasser datafile to the GBIF formated file is performed with the [a Rmarkdown script `CompileSessions.rmd`](). 
+All the processing steps from the original Birdlasser datafile to the GBIF formatted file are described in the Rmarkdown script [`Processe2GBIF.rmd`](https://a-rocha-kenya.github.io/Bird-Survey-Around-Mida-Creek/Processe2GBIF.html).  
 
 
 
 ## External Links
-- [GBIF dataset](https://doi.org/)
-- [Github Repository](https://github.com/A-Rocha-Kenya/)
-- [Script to generate the gbif files](https://a-rocha-kenya.github.io/)
+- [GBIF dataset](https://doi.org/10.15468/jwnu2e)
+- [Github Repository](https://github.com/A-Rocha-Kenya/Bird-Survey-Around-Mida-Creek)
+- [Script to generate the GBIF files](https://a-rocha-kenya.github.io/Bird-Survey-Around-Mida-Creek/Processe2GBIF.html)
 - [ResearchGate Project](https://www.researchgate.net/project/Intra-african-Bird-Migration)
-- [PowerBi Visual]()
